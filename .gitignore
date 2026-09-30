@@ -1,0 +1,34 @@
+# Local generated installation state
+.local/
+
+# User output
+transcript/
+
+# Generated Hugging Face token example
+hf-token.cmd.example
+
+# Secrets
+hf-token.cmd
+*.token
+.env
+.env.*
+
+# Logs
+*.log
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
