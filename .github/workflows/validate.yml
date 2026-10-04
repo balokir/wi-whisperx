@@ -1,0 +1,202 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Validate repository layout
+        shell: cmd
+        run: call setup\00-validate-layout.cmd
+
+      - name: Validate repository-level source files
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $required = @(
+              "bootstrap.ps1",
+              ".github\workflows\release.yml",
+              ".github\workflows\validate.yml",
+              "README.md",
+              "SECURITY.md",
+              "LICENSE",
+              "THIRD_PARTY_NOTICES.md"
+          )
+
+          foreach ($path in $required) {
+              if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                  throw "Required repository file is missing: $path"
+              }
+          }
+
+          Write-Host "[OK] repository-level source files"
+
+      - name: Validate PowerShell 5.1 syntax
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $failed = $false
+
+          Get-ChildItem -Path . -Recurse -File -Filter *.ps1 | ForEach-Object {
+              $tokens = $null
+              $errors = $null
+
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $_.FullName,
+                  [ref]$tokens,
+                  [ref]$errors
+              ) | Out-Null
+
+              if ($errors -and $errors.Count -gt 0) {
+                  Write-Host "[BROKEN] $($_.FullName)"
+
+                  foreach ($error in $errors) {
+                      Write-Host "  $($error.Message)"
+                  }
+
+                  $failed = $true
+              }
+          }
+
+          if ($failed) {
+              exit 1
+          }
+
+          Write-Host "[OK] PowerShell 5.1 syntax"
+
+      - name: Reject tracked generated state and secrets
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $ignoredTracked = @(git ls-files -ci --exclude-standard)
+          if ($LASTEXITCODE -ne 0) {
+              throw "git ls-files -ci failed"
+          }
+
+          if ($ignoredTracked.Count -gt 0) {
+              Write-Host "[BROKEN] ignored files are tracked:"
+
+              foreach ($path in $ignoredTracked) {
+                  Write-Host "  $path"
+              }
+
+              exit 1
+          }
+
+          $tracked = @(git ls-files)
+          if ($LASTEXITCODE -ne 0) {
+              throw "git ls-files failed"
+          }
+
+          $forbidden = @(
+              $tracked | Where-Object {
+                  $_ -eq "hf-token.cmd" -or
+                  $_ -eq "hf-token.cmd.example" -or
+                  $_ -eq ".local" -or
+                  $_ -like ".local/*" -or
+                  $_ -eq "transcript" -or
+                  $_ -like "transcript/*" -or
+                  $_ -like "*.token" -or
+                  $_ -eq ".env" -or
+                  $_ -like ".env.*"
+              }
+          )
+
+          if ($forbidden.Count -gt 0) {
+              Write-Host "[BROKEN] forbidden generated/secret files are tracked:"
+
+              foreach ($path in $forbidden) {
+                  Write-Host "  $path"
+              }
+
+              exit 1
+          }
+
+          Write-Host "[OK] tracked-file hygiene"
+
+      - name: Resolve configured Python version
+        id: runtime-python
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $matches = @(
+              Get-Content -LiteralPath "setup\config.cmd" |
+                  Where-Object { $_ -match '^set "PYTHON_VERSION=([^"]+)"\s*$' }
+          )
+
+          if ($matches.Count -ne 1) {
+              throw "Expected exactly one PYTHON_VERSION assignment in setup\config.cmd; found $($matches.Count)"
+          }
+
+          if ($matches[0] -notmatch '^set "PYTHON_VERSION=([^"]+)"\s*$') {
+              throw "Cannot parse PYTHON_VERSION from setup\config.cmd"
+          }
+
+          $version = $Matches[1]
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+              throw "PYTHON_VERSION is empty"
+          }
+
+          [IO.File]::AppendAllText(
+              $env:GITHUB_OUTPUT,
+              "version=$version" + [Environment]::NewLine,
+              (New-Object Text.UTF8Encoding($false))
+          )
+
+          Write-Host "[OK] configured Python version: $version"
+
+      - name: Set up configured Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "${{ steps.runtime-python.outputs.version }}"
+
+      - name: Validate Python syntax
+        shell: powershell
+        env:
+          EXPECTED_PYTHON_VERSION: "${{ steps.runtime-python.outputs.version }}"
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $version = python -c "import platform; print(platform.python_version())"
+          if ($LASTEXITCODE -ne 0) {
+              throw "Cannot execute CI Python"
+          }
+
+          $version = $version.Trim()
+
+          if ($version -ne $env:EXPECTED_PYTHON_VERSION) {
+              throw "Unexpected CI Python version: $version; expected $env:EXPECTED_PYTHON_VERSION"
+          }
+
+          Get-ChildItem -Path . -Recurse -File -Filter *.py | ForEach-Object {
+              python -m py_compile $_.FullName
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Python syntax check failed: $($_.FullName)"
+              }
+          }
+
+          Write-Host "[OK] Python $version syntax"
