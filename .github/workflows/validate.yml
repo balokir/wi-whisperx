@@ -36,6 +36,7 @@ jobs:
           $required = @(
               "bootstrap.ps1",
               ".github\workflows\release.yml",
+              ".github\workflows\validate.yml",
               "README.md",
               "SECURITY.md",
               "LICENSE",
@@ -134,13 +135,48 @@ jobs:
 
           Write-Host "[OK] tracked-file hygiene"
 
-      - name: Set up Python 3.11.9
+      - name: Resolve configured Python version
+        id: runtime-python
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $matches = @(
+              Get-Content -LiteralPath "setup\config.cmd" |
+                  Where-Object { $_ -match '^set "PYTHON_VERSION=([^"]+)"\s*$' }
+          )
+
+          if ($matches.Count -ne 1) {
+              throw "Expected exactly one PYTHON_VERSION assignment in setup\config.cmd; found $($matches.Count)"
+          }
+
+          if ($matches[0] -notmatch '^set "PYTHON_VERSION=([^"]+)"\s*$') {
+              throw "Cannot parse PYTHON_VERSION from setup\config.cmd"
+          }
+
+          $version = $Matches[1]
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+              throw "PYTHON_VERSION is empty"
+          }
+
+          [IO.File]::AppendAllText(
+              $env:GITHUB_OUTPUT,
+              "version=$version" + [Environment]::NewLine,
+              (New-Object Text.UTF8Encoding($false))
+          )
+
+          Write-Host "[OK] configured Python version: $version"
+
+      - name: Set up configured Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.11.9"
+          python-version: "${{ steps.runtime-python.outputs.version }}"
 
-      - name: Validate Python 3.11 syntax
+      - name: Validate Python syntax
         shell: powershell
+        env:
+          EXPECTED_PYTHON_VERSION: "${{ steps.runtime-python.outputs.version }}"
         run: |
           $ErrorActionPreference = "Stop"
 
@@ -149,11 +185,13 @@ jobs:
               throw "Cannot execute CI Python"
           }
 
-          if ($version.Trim() -ne "3.11.9") {
-              throw "Unexpected CI Python version: $version"
+          $version = $version.Trim()
+
+          if ($version -ne $env:EXPECTED_PYTHON_VERSION) {
+              throw "Unexpected CI Python version: $version; expected $env:EXPECTED_PYTHON_VERSION"
           }
 
-          Get-ChildItem -Path setup -File -Filter *.py | ForEach-Object {
+          Get-ChildItem -Path . -Recurse -File -Filter *.py | ForEach-Object {
               python -m py_compile $_.FullName
 
               if ($LASTEXITCODE -ne 0) {
@@ -161,4 +199,4 @@ jobs:
               }
           }
 
-          Write-Host "[OK] Python 3.11.9 syntax"
+          Write-Host "[OK] Python $version syntax"
