@@ -21,7 +21,7 @@ This repository is **not** a fork of WhisperX and does **not** redistribute thir
 Once at least one GitHub release has been published, the latest release can be downloaded, verified, unpacked, and installed with one PowerShell command:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; & $p"
+$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p
 ```
 
 By default, the bootstrap installs into:
@@ -33,13 +33,13 @@ By default, the bootstrap installs into:
 To choose another directory:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; & $p -InstallDir 'C:\work\tools\wi-whisperx'"
+$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -InstallDir 'C:\work\tools\wi-whisperx'
 ```
 
-A specific published version can also be requested:
+A specific published version can also be requested without depending on the current latest release:
 
 ```powershell
-& "$env:TEMP\wi-whisperx-bootstrap.ps1" -Version v0.1.0
+$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/download/v0.1.0/bootstrap.ps1' -UseBasicParsing -OutFile $p; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Version v0.1.0
 ```
 
 The bootstrap:
@@ -51,6 +51,8 @@ The bootstrap:
 5. runs the normal `install.cmd`.
 
 The bootstrap intentionally refuses to overwrite a non-empty installation directory. For an existing installation, use the repository's normal `repair.cmd` workflow instead.
+
+For the release-integrity model above, enable GitHub release immutability before publishing releases so the published tag and release assets cannot be replaced.
 
 ## Quick start
 
