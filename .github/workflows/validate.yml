@@ -1,0 +1,164 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Validate repository layout
+        shell: cmd
+        run: call setup\00-validate-layout.cmd
+
+      - name: Validate repository-level source files
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $required = @(
+              "bootstrap.ps1",
+              ".github\workflows\release.yml",
+              "README.md",
+              "SECURITY.md",
+              "LICENSE",
+              "THIRD_PARTY_NOTICES.md"
+          )
+
+          foreach ($path in $required) {
+              if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                  throw "Required repository file is missing: $path"
+              }
+          }
+
+          Write-Host "[OK] repository-level source files"
+
+      - name: Validate PowerShell 5.1 syntax
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $failed = $false
+
+          Get-ChildItem -Path . -Recurse -File -Filter *.ps1 | ForEach-Object {
+              $tokens = $null
+              $errors = $null
+
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $_.FullName,
+                  [ref]$tokens,
+                  [ref]$errors
+              ) | Out-Null
+
+              if ($errors -and $errors.Count -gt 0) {
+                  Write-Host "[BROKEN] $($_.FullName)"
+
+                  foreach ($error in $errors) {
+                      Write-Host "  $($error.Message)"
+                  }
+
+                  $failed = $true
+              }
+          }
+
+          if ($failed) {
+              exit 1
+          }
+
+          Write-Host "[OK] PowerShell 5.1 syntax"
+
+      - name: Reject tracked generated state and secrets
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $ignoredTracked = @(git ls-files -ci --exclude-standard)
+          if ($LASTEXITCODE -ne 0) {
+              throw "git ls-files -ci failed"
+          }
+
+          if ($ignoredTracked.Count -gt 0) {
+              Write-Host "[BROKEN] ignored files are tracked:"
+
+              foreach ($path in $ignoredTracked) {
+                  Write-Host "  $path"
+              }
+
+              exit 1
+          }
+
+          $tracked = @(git ls-files)
+          if ($LASTEXITCODE -ne 0) {
+              throw "git ls-files failed"
+          }
+
+          $forbidden = @(
+              $tracked | Where-Object {
+                  $_ -eq "hf-token.cmd" -or
+                  $_ -eq "hf-token.cmd.example" -or
+                  $_ -eq ".local" -or
+                  $_ -like ".local/*" -or
+                  $_ -eq "transcript" -or
+                  $_ -like "transcript/*" -or
+                  $_ -like "*.token" -or
+                  $_ -eq ".env" -or
+                  $_ -like ".env.*"
+              }
+          )
+
+          if ($forbidden.Count -gt 0) {
+              Write-Host "[BROKEN] forbidden generated/secret files are tracked:"
+
+              foreach ($path in $forbidden) {
+                  Write-Host "  $path"
+              }
+
+              exit 1
+          }
+
+          Write-Host "[OK] tracked-file hygiene"
+
+      - name: Set up Python 3.11.9
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Validate Python 3.11 syntax
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $version = python -c "import platform; print(platform.python_version())"
+          if ($LASTEXITCODE -ne 0) {
+              throw "Cannot execute CI Python"
+          }
+
+          if ($version.Trim() -ne "3.11.9") {
+              throw "Unexpected CI Python version: $version"
+          }
+
+          Get-ChildItem -Path setup -File -Filter *.py | ForEach-Object {
+              python -m py_compile $_.FullName
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Python syntax check failed: $($_.FullName)"
+              }
+          }
+
+          Write-Host "[OK] Python 3.11.9 syntax"
