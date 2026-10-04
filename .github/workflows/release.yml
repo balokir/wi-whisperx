@@ -18,9 +18,10 @@ jobs:
 
     steps:
       - name: Checkout tagged commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate release tag
         shell: bash
@@ -37,6 +38,13 @@ jobs:
 
           if [[ "$(git rev-parse HEAD)" != "${GITHUB_SHA}" ]]; then
             echo "Checked out commit does not match GITHUB_SHA"
+            exit 1
+          fi
+
+          git fetch --no-tags origin main:refs/remotes/origin/main
+
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" refs/remotes/origin/main; then
+            echo "Release commit is not reachable from main: ${GITHUB_SHA}"
             exit 1
           fi
 
