@@ -16,6 +16,42 @@ The intent is deliberately simple:
 
 This repository is **not** a fork of WhisperX and does **not** redistribute third-party binaries or model weights.
 
+## Install from URL
+
+Once at least one GitHub release has been published, the latest release can be downloaded, verified, unpacked, and installed with one PowerShell command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; & $p"
+```
+
+By default, the bootstrap installs into:
+
+```text
+<current directory>\wi-whisperx
+```
+
+To choose another directory:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=Join-Path $env:TEMP 'wi-whisperx-bootstrap.ps1'; Invoke-WebRequest 'https://github.com/balokir/wi-whisperx/releases/latest/download/bootstrap.ps1' -UseBasicParsing -OutFile $p; & $p -InstallDir 'C:\work\tools\wi-whisperx'"
+```
+
+A specific published version can also be requested:
+
+```powershell
+& "$env:TEMP\wi-whisperx-bootstrap.ps1" -Version v0.1.0
+```
+
+The bootstrap:
+
+1. resolves the requested GitHub release;
+2. downloads `wi-whisperx-vX.Y.Z.zip` and its `.sha256` file;
+3. verifies the release ZIP before extraction;
+4. extracts the source-only package into the target directory;
+5. runs the normal `install.cmd`.
+
+The bootstrap intentionally refuses to overwrite a non-empty installation directory. For an existing installation, use the repository's normal `repair.cmd` workflow instead.
+
 ## Quick start
 
 Install:
