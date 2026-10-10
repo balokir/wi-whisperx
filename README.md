@@ -5,12 +5,8 @@
 # Local WhisperX for Windows 11
 
 Local transcription can be practical on modest laptop hardware. The NVIDIA Quadro T1000 mobile GPU used here was
-introduced in 2019 and has just 4 GB of VRAM. On this Windows 11 laptop, one hour of Russian audio was transcribed in
-about 12 minutes.
-
-I spent a long time trying to determine what hardware WhisperX really needs and expected the answer to be a new
-high-end workstation. The machine I already had turned out to be enough. With speaker diarization enabled, a roughly
-one-hour recording took about 20 minutes.
+introduced in 2019 and has just 4 GB of VRAM. On this Windows 11 laptop, one hour of audio was transcribed in
+about 12 minutes. With speaker diarization enabled, a roughly one-hour recording took about 20 minutes.
 
 These are observed results, not guaranteed performance figures. They were measured with `large-v3-turbo`, CUDA, and
 `int8`; see the [tested configuration](#tested-configuration) and [observed performance](#observed-performance).
