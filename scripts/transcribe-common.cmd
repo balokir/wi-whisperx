@@ -58,6 +58,8 @@ goto :after_run
 
 :diarize
 call "%SCRIPTS_DIR%\require-hf-token.cmd" || exit /b 1
+rem Use inherited HF_TOKEN even when the caller disabled implicit Hub authentication.
+set "HF_HUB_DISABLE_IMPLICIT_TOKEN=0"
 call "%SCRIPTS_DIR%\whisperx.cmd" "%~1" ^
   --model large-v3-turbo ^
   --language ru ^
@@ -66,7 +68,6 @@ call "%SCRIPTS_DIR%\whisperx.cmd" "%~1" ^
   --output_dir "%TRANSCRIPT%" ^
   --output_format all ^
   --diarize ^
-  --hf_token "%HF_TOKEN%" ^
   --verbose False ^
   --print_progress True ^
   --log-level error
@@ -85,6 +86,8 @@ if errorlevel 1 (
 )
 
 call "%SCRIPTS_DIR%\require-hf-token.cmd" || exit /b 1
+rem Use inherited HF_TOKEN even when the caller disabled implicit Hub authentication.
+set "HF_HUB_DISABLE_IMPLICIT_TOKEN=0"
 call "%SCRIPTS_DIR%\whisperx.cmd" "%~1" ^
   --model large-v3-turbo ^
   --language ru ^
@@ -95,7 +98,6 @@ call "%SCRIPTS_DIR%\whisperx.cmd" "%~1" ^
   --diarize ^
   --min_speakers %~3 ^
   --max_speakers %~3 ^
-  --hf_token "%HF_TOKEN%" ^
   --verbose False ^
   --print_progress True ^
   --log-level error
