@@ -1,7 +1,19 @@
 # Local WhisperX for Windows 11
 
-A practical Windows 11 setup for running WhisperX locally, with explicit fixes for the Windows/runtime issues
-encountered during a real installation.
+> **You do not need a $4,000 desktop to get practical local transcription.**
+>
+> **One hour of Russian audio was transcribed locally in about 12 minutes on a Windows 11 laptop with an
+> NVIDIA Quadro T1000 and just 4 GB of VRAM.**
+
+I spent a long time trying to determine what hardware WhisperX really needs and expected the answer to be a new
+high-end workstation. The machine I already had turned out to be enough. With speaker diarization enabled, a roughly
+one-hour recording took about 20 minutes.
+
+These are observed results, not guaranteed performance figures. They were measured with `large-v3-turbo`, CUDA, and
+`int8`; see the [tested configuration](#tested-configuration) and [observed performance](#observed-performance).
+
+This repository packages that working configuration into a practical, repeatable Windows 11 setup, including explicit
+fixes for the Windows/runtime issues encountered during the real installation.
 
 The intent is deliberately simple:
 
