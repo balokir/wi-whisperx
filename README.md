@@ -1,6 +1,6 @@
 # Local WhisperX for Windows 11
 
-Local transcription can be practical even on older laptop hardware. The NVIDIA Quadro T1000 mobile GPU used here was
+Local transcription can be practical on modest laptop hardware. The NVIDIA Quadro T1000 mobile GPU used here was
 introduced in 2019 and has just 4 GB of VRAM. On this Windows 11 laptop, one hour of Russian audio was transcribed in
 about 12 minutes.
 
