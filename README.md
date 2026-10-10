@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/wi-whisperx-logo.png" alt="Wi WhisperX logo" width="640">
+</p>
+
 # Local WhisperX for Windows 11
 
 Local transcription can be practical on modest laptop hardware. The NVIDIA Quadro T1000 mobile GPU used here was
