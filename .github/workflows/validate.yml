@@ -200,3 +200,9 @@ jobs:
           }
 
           Write-Host "[OK] Python $version syntax"
+
+      - name: Test diarization token handoff
+        shell: powershell
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
