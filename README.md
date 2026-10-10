@@ -56,7 +56,7 @@ For the release-integrity model above, enable GitHub release immutability before
 
 ## Quick start
 
-Install:
+If the repository is already downloaded or installed:
 
 ```cmd
 install.cmd
@@ -318,9 +318,9 @@ They do **not** install or manage a global CUDA Toolkit.
 The development machine used while building and testing this setup also had CUDA 12.8 installed system-wide. A
 completely clean Windows machine with only the NVIDIA driver has not yet been validated as a separate test case.
 
-## Installation
+## Manual installation
 
-Clone or unpack the repository into the directory where it should live.
+If you do not want to use the URL bootstrap installer, clone or unpack the repository into the directory where it should live.
 
 Then run:
 
