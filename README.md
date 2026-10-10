@@ -1,6 +1,6 @@
 # Local WhisperX for Windows 11
 
-Local transcription can be practical on modest laptop hardware. On the tested Windows 11 laptop with an
+Local transcription can be practical even on older laptop hardware. On a Windows 11 laptop with an
 NVIDIA Quadro T1000 and 4 GB of VRAM, one hour of Russian audio was transcribed in about 12 minutes.
 
 I spent a long time trying to determine what hardware WhisperX really needs and expected the answer to be a new
